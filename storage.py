@@ -28,9 +28,23 @@ class Store:
                 ts      INTEGER NOT NULL,
                 PRIMARY KEY (chat_id, key)
             );
+            CREATE TABLE IF NOT EXISTS meta (
+                k TEXT PRIMARY KEY,
+                v TEXT
+            );
             """
         )
         self.db.commit()
+
+    # --- small key/value settings -----------------------------------------
+    def get_meta(self, k: str, default=None):
+        row = self.db.execute("SELECT v FROM meta WHERE k=?", (k,)).fetchone()
+        return row[0] if row else default
+
+    def set_meta(self, k: str, v):
+        with _lock:
+            self.db.execute("INSERT OR REPLACE INTO meta(k, v) VALUES (?,?)", (k, str(v)))
+            self.db.commit()
 
     # --- chats -------------------------------------------------------------
     def ensure_chat(self, chat_id: int):

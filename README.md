@@ -43,6 +43,12 @@ Put that in `ALLOWED_CHAT_IDS` so nobody else can use the bot (and your API cred
 The bot uses *polling*, so it needs an always-on **worker**. It doesn't need a web
 server or a public URL. Hosts that put free web services to sleep won't work.
 
+**Option 0: GitHub Actions (free, no card).** `.github/workflows/bot.yml` runs
+`run_once.py` every 30 min: it answers pending commands, sends alerts, then exits.
+Add repo secrets `TELEGRAM_BOT_TOKEN` (required), plus optionally `ALLOWED_CHAT_IDS`,
+`ANTHROPIC_API_KEY` and `YOUTUBE_API_KEY`. Command replies can take up to 30 min.
+The watchlist is stored in the Actions cache, not in the repo.
+
 **Option A: Railway** (easiest; low-cost, with trial credit)
 1. Push this folder to a GitHub repo.
 2. railway.app: New Project, then Deploy from GitHub. It finds the Dockerfile.

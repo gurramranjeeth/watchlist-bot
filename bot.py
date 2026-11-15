@@ -24,6 +24,22 @@ from sources import fetch_interviews, fetch_news, looks_like_ticker
 from storage import Store
 from summarizer import Summarizer
 
+
+def _load_env_file(path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")):
+    """Read KEY=value lines from .env next to this file (no extra library needed)."""
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8-sig") as f:
+        for line in f:
+            line = line.split("#", 1)[0].strip() if not line.strip().startswith("#") else ""
+            if "=" in line:
+                k, v = line.split("=", 1)
+                if v.strip():
+                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+_load_env_file()
+
 # ---------------------------------------------------------------- config ----
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -262,7 +278,7 @@ async def check_all(ctx: ContextTypes.DEFAULT_TYPE):
                 log.warning("check failed for %s/%s: %s", chat_id, name, e)
 
 
-def main():
+def build_app() -> Application:
     app = Application.builder().token(TOKEN).build()
     for cmd, fn in [
         ("start", cmd_start), ("help", cmd_help), ("add", cmd_add), ("remove", cmd_remove),
@@ -270,6 +286,11 @@ def main():
         ("pause", cmd_pause), ("resume", cmd_resume),
     ]:
         app.add_handler(CommandHandler(cmd, fn))
+    return app
+
+
+def main():
+    app = build_app()
     app.job_queue.run_repeating(check_all, interval=INTERVAL_MIN * 60, first=60)
     log.info("Bot running. Model=%s interval=%smin youtube=%s", MODEL, INTERVAL_MIN, bool(YOUTUBE_KEY))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
