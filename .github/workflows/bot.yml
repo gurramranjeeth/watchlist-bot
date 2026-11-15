@@ -1,0 +1,48 @@
+name: watchlist-bot
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: watchlist-bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      ALLOWED_CHAT_IDS: ${{ secrets.ALLOWED_CHAT_IDS }}
+      MAX_WATCHLIST_ITEMS: "60"
+      NEWS_REGION: "en-IN"
+      DB_PATH: data/watchlist.db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore watchlist
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: botdb-${{ github.run_id }}
+          restore-keys: botdb-
+
+      - run: mkdir -p data && python run_once.py
+
+      - name: Save watchlist
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: botdb-${{ github.run_id }}
